@@ -43,6 +43,11 @@ URL="https://github.com/$REPO/releases/download/$LATEST/${BINARY}_${OS}_${ARCH}.
 echo "Installing wtw $LATEST ($OS/$ARCH) → $INSTALL_DIR/$BINARY"
 curl -fsSL "$URL" | tar -xz -C /tmp "$BINARY"
 
+# Create install directory if it doesn't exist
+if [[ ! -d "$INSTALL_DIR" ]]; then
+  sudo mkdir -p "$INSTALL_DIR"
+fi
+
 # Use sudo only if needed
 if [[ -w "$INSTALL_DIR" ]]; then
   mv "/tmp/$BINARY" "$INSTALL_DIR/$BINARY"
