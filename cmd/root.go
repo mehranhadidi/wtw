@@ -21,6 +21,11 @@ Optionally runs a .wtwrc setup script in the new worktree.`,
 	RunE:          runCreate,
 }
 
+// SetVersion sets the version string shown by --version.
+func SetVersion(v string) {
+	rootCmd.Version = v
+}
+
 // Execute runs the root command.
 func Execute() error {
 	return rootCmd.Execute()
