@@ -1,5 +1,10 @@
 # wtw — Git Worktree workflow Helper
 
+> **Early stages** — this is a hobby project and a work in progress. Things may
+> change, break, or improve over time. If you run into a problem, please
+> [open an issue](https://github.com/mehranhadidi/wtw/issues). If you have an
+> idea or improvement, [PRs are very welcome](https://github.com/mehranhadidi/wtw/pulls).
+
 ## What is it?
 
 `wtw` is a small command-line tool that makes working with Git worktrees easier.
@@ -125,22 +130,28 @@ npm install
 ### Option A — Install script (recommended)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mehran/wtw/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/mehranhadidi/wtw/main/install.sh | bash
 ```
 
 Installs to `/usr/local/bin` by default. To use a different directory:
 
 ```bash
-INSTALL_DIR=~/.local/bin curl -fsSL https://raw.githubusercontent.com/mehran/wtw/main/install.sh | bash
+INSTALL_DIR=~/.local/bin curl -fsSL https://raw.githubusercontent.com/mehranhadidi/wtw/main/install.sh | bash
 ```
+
+**Upgrading** — run the same command again. The script always fetches the latest release and overwrites the existing binary.
 
 ### Option B — Build from source
 
 ```bash
-git clone https://github.com/mehran/wtw
+git clone https://github.com/mehranhadidi/wtw
 cd wtw
 go build -o build/wtw .
 mv build/wtw ~/.local/bin/
 ```
 
 Requires [Go 1.21+](https://go.dev/dl/).
+
+## License
+
+MIT — see [LICENSE](LICENSE) for details.

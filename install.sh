@@ -3,14 +3,14 @@
 # Installs the latest wtw binary for your OS and architecture.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/mehran/wtw/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/mehranhadidi/wtw/main/install.sh | bash
 #
 # To install to a custom directory:
 #   INSTALL_DIR=~/.local/bin bash install.sh
 
 set -euo pipefail
 
-REPO="mehran/wtw"
+REPO="mehranhadidi/wtw"
 BINARY="wtw"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 
