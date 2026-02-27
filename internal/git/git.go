@@ -59,6 +59,40 @@ func RequireWorktree(subcommand string) (string, string, error) {
 	return worktreeRoot, filepath.Dir(mainRepo), nil
 }
 
+// Worktree holds the path and branch of a single git worktree entry.
+// Branch is empty if the worktree is in a detached HEAD state.
+type Worktree struct {
+	Path   string
+	Branch string
+}
+
+// ListWorktrees returns all worktrees for the repo at repoRoot.
+func ListWorktrees(repoRoot string) ([]Worktree, error) {
+	out, err := exec.Command("git", "-C", repoRoot, "worktree", "list", "--porcelain").Output()
+	if err != nil {
+		return nil, err
+	}
+	return ParseWorktrees(string(out)), nil
+}
+
+// ParseWorktrees parses `git worktree list --porcelain` output into a slice of Worktree.
+// Exported so tests can call it directly without running git.
+func ParseWorktrees(porcelain string) []Worktree {
+	var worktrees []Worktree
+	var current Worktree
+	for _, line := range strings.Split(porcelain, "\n") {
+		if path, ok := strings.CutPrefix(line, "worktree "); ok {
+			current = Worktree{Path: strings.TrimSpace(path)}
+		} else if branch, ok := strings.CutPrefix(line, "branch refs/heads/"); ok {
+			current.Branch = strings.TrimSpace(branch)
+		} else if line == "" && current.Path != "" {
+			worktrees = append(worktrees, current)
+			current = Worktree{}
+		}
+	}
+	return worktrees
+}
+
 // WorktreeForBranch returns the worktree path checked out on branch, or "".
 func WorktreeForBranch(repoRoot, branch string) string {
 	out, err := exec.Command("git", "-C", repoRoot, "worktree", "list", "--porcelain").Output()

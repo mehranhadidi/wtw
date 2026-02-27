@@ -186,6 +186,29 @@ func RunSetup(cfg RunSetupConfig) error {
 	return nil
 }
 
+// List prints all worktrees for the current repo, marking the current one.
+func List(repoRoot string) error {
+	worktrees, err := git.ListWorktrees(repoRoot)
+	if err != nil {
+		return fmt.Errorf("failed to list worktrees: %w", err)
+	}
+
+	cwd, _ := os.Getwd()
+
+	for _, wt := range worktrees {
+		branch := wt.Branch
+		if branch == "" {
+			branch = "(detached)"
+		}
+		if wt.Path == cwd {
+			ui.PrintCmd(wt.Path + "  " + branch + "  ← current")
+		} else {
+			fmt.Printf("%s  %s\n", wt.Path, branch)
+		}
+	}
+	return nil
+}
+
 // Init creates a sample .wtwrc in repoRoot.
 func Init(repoRoot string) error {
 	rcPath := filepath.Join(repoRoot, ".wtwrc")

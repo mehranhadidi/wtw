@@ -75,6 +75,7 @@ When you're done, run `wtw done` from inside the worktree to remove it cleanly.
 |---|---|---|
 | `wtw <branch>` | | Create a worktree for a branch |
 | `wtw <branch> <dir>` | | Create a worktree in a specific directory |
+| `wtw list` | `wtw ls` | List all worktrees and their branches |
 | `wtw done` | `wtw d` | Remove the current worktree |
 | `wtw init` | `wtw i` | Create a sample `.wtwrc` setup script in the repo |
 | `wtw run-wtwrc` | `wtw rrc` | Re-run the setup script in the current worktree |
