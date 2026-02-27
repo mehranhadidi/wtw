@@ -84,13 +84,15 @@ When you're done, run `wtw done` from inside the worktree to remove it cleanly.
 
 ### Automatic project setup with `.wtwrc`
 
-Every project has setup steps: copying `.env` files, installing dependencies,
-generating keys. Without automation you'd have to remember and repeat all of this
-every time you create a new worktree.
+Every time you create a worktree you'd normally have to set it up by hand — copy
+your `.env` files, install dependencies, generate keys, run migrations. Every single
+time, for every single worktree. That gets tedious fast.
 
-Add a `.wtwrc` file to your repo and `wtw` will run it automatically each time a
-new worktree is created — so the project is fully ready to work on straight away.
-Run `wtw init` to generate a commented template to get started.
+`wtw` solves this with a `.wtwrc` file you add to your repo once. It runs
+automatically whenever a new worktree is created, so the project is fully ready to
+work on without any manual steps. It works with any stack — Laravel, Node.js, Rails,
+Django, anything. You just write the setup steps for your project once and `wtw`
+handles the rest. Run `wtw init` to generate a commented template to get started.
 
 The script runs inside the new worktree directory and has access to these variables:
 
