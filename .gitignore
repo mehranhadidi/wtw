@@ -1,1 +1,13 @@
 .idea
+
+# built binary
+build/
+
+# goreleaser output
+dist/
+
+# local test repos created by go test
+tmp/
+
+# coverage files
+*.out

@@ -1,0 +1,19 @@
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck  # covers gosimple, unused, and more
+    - ineffassign
+
+linters-settings:
+  errcheck:
+    # Ignore errors from fmt.Fprintf and ui.* (best-effort terminal output).
+    exclude-functions:
+      - fmt.Fprintf
+      - (wtw/internal/ui).Error
+
+issues:
+  exclude-rules:
+    # Test helpers routinely ignore cleanup errors.
+    - path: _test\.go
+      linters: [errcheck]
