@@ -24,7 +24,9 @@ const wtwrcTemplate = `# .wtwrc — wtw setup script
 #
 # Available variables:
 #   $WORKTREE_PATH   absolute path to the new worktree
+#   $WORKTREE_NAME   worktree directory name (e.g. myapp-feature-x)
 #   $BRANCH_NAME     the branch name
+#   $REPO_NAME       base name of the main repo directory (e.g. myapp)
 #   $REPO_ROOT       absolute path to the main repo
 #   $ORIGINAL_DIR    directory where ` + "`wtw`" + ` was called from
 
@@ -32,9 +34,9 @@ const wtwrcTemplate = `# .wtwrc — wtw setup script
 # cp "$REPO_ROOT/.env" .env
 # cp "$REPO_ROOT/.env.local" .env.local
 
-# Use $BRANCH_NAME to generate unique values per worktree, for example:
-# echo "APP_URL=http://${BRANCH_NAME}.test" >> .env
-# echo "DB_DATABASE=${BRANCH_NAME//-/_}" >> .env
+# Use wtw env-set to override specific values after copying:
+# wtw env-set .env APP_URL=http://${WORKTREE_NAME}.test
+# wtw env-set .env DB_DATABASE=${BRANCH_NAME//-/_} DEBUG=true
 
 # Install dependencies
 # npm install
@@ -231,11 +233,85 @@ func RunScript(scriptPath, worktreePath, branchName, repoRoot, originalDir strin
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(os.Environ(),
 		"WORKTREE_PATH="+worktreePath,
+		"WORKTREE_NAME="+filepath.Base(worktreePath),
 		"BRANCH_NAME="+branchName,
+		"REPO_NAME="+filepath.Base(repoRoot),
 		"REPO_ROOT="+repoRoot,
 		"ORIGINAL_DIR="+originalDir,
 	)
 	return cmd.Run()
+}
+
+// EnvSetConfig holds inputs for EnvSet.
+type EnvSetConfig struct {
+	File  string   // path to the env file
+	Pairs []string // KEY=VALUE entries
+}
+
+// EnvSet sets or adds key-value pairs in an env file.
+// Existing keys are replaced in-place; absent keys are appended at the end.
+// Comment and blank lines are preserved unchanged.
+func EnvSet(cfg EnvSetConfig) error {
+	values := make(map[string]string, len(cfg.Pairs))
+	var order []string
+	for _, p := range cfg.Pairs {
+		idx := strings.IndexByte(p, '=')
+		if idx < 0 {
+			return fmt.Errorf("invalid pair %q: expected KEY=VALUE", p)
+		}
+		key := p[:idx]
+		if _, seen := values[key]; !seen {
+			order = append(order, key)
+		}
+		values[key] = p[idx+1:]
+	}
+
+	data, err := os.ReadFile(cfg.File)
+	if err != nil {
+		return fmt.Errorf("cannot read %s: %w", cfg.File, err)
+	}
+
+	content := string(data)
+	trailingNewline := strings.HasSuffix(content, "\n")
+	if trailingNewline {
+		content = content[:len(content)-1]
+	}
+
+	lines := strings.Split(content, "\n")
+	written := make(map[string]bool, len(values))
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		eq := strings.IndexByte(line, '=')
+		if eq < 0 {
+			continue
+		}
+		key := strings.TrimSpace(line[:eq])
+		if val, ok := values[key]; ok {
+			lines[i] = key + "=" + val
+			written[key] = true
+		}
+	}
+
+	for _, key := range order {
+		if !written[key] {
+			lines = append(lines, key+"="+values[key])
+		}
+	}
+
+	result := strings.Join(lines, "\n")
+	if trailingNewline || len(lines) > 0 {
+		result += "\n"
+	}
+
+	info, err := os.Stat(cfg.File)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(cfg.File, []byte(result), info.Mode())
 }
 
 // ResolveSetupScript resolves the effective setup script path.

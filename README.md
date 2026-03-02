@@ -79,6 +79,7 @@ When you're done, run `wtw done` from inside the worktree to remove it cleanly.
 | `wtw done` | `wtw d` | Remove the current worktree |
 | `wtw init` | `wtw i` | Create a sample `.wtwrc` setup script in the repo |
 | `wtw run-wtwrc` | `wtw rrc` | Re-run the setup script in the current worktree |
+| `wtw env-set <file> KEY=VALUE ...` | | Set or add key-value pairs in an env file |
 
 **`-c <script>` flag** — Use a custom setup script instead of `.wtwrc`.
 
@@ -97,7 +98,9 @@ handles the rest. Run `wtw init` to generate a commented template to get started
 The script runs inside the new worktree directory and has access to these variables:
 
 - `$WORKTREE_PATH` — absolute path to the new worktree
+- `$WORKTREE_NAME` — worktree directory name (e.g. `myapp-feature-login`)
 - `$BRANCH_NAME` — the branch name
+- `$REPO_NAME` — base name of the main repo directory (e.g. `myapp`)
 - `$REPO_ROOT` — absolute path to the main repo
 - `$ORIGINAL_DIR` — directory where `wtw` was called from
 
@@ -105,10 +108,10 @@ The script runs inside the new worktree directory and has access to these variab
 ```bash
 # .wtwrc
 
-# Copy environment file and give this worktree a unique app URL and database
+# Copy environment file and override per-worktree values
 cp "$REPO_ROOT/.env" .env
-sed -i '' "s|APP_URL=.*|APP_URL=http://${BRANCH_NAME}.test|" .env
-sed -i '' "s|DB_DATABASE=.*|DB_DATABASE=${BRANCH_NAME//-/_}|" .env
+wtw env-set .env APP_URL=http://${WORKTREE_NAME}.test
+wtw env-set .env DB_DATABASE=${BRANCH_NAME//-/_}
 
 # Install dependencies and prepare the app
 composer install
@@ -120,9 +123,9 @@ php artisan migrate
 ```bash
 # .wtwrc
 
-# Copy environment file and give this worktree a unique port
+# Copy environment file and override per-worktree values
 cp "$REPO_ROOT/.env" .env
-sed -i '' "s|APP_PORT=.*|APP_PORT=300${RANDOM:0:1}|" .env
+wtw env-set .env VITE_APP_URL=http://${WORKTREE_NAME}.test
 
 # Install dependencies
 npm install
