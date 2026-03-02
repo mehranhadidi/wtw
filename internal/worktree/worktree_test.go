@@ -148,6 +148,167 @@ func TestCreate_SanitizesBranchName(t *testing.T) {
 	}
 }
 
+func TestRunScript_EnvVars(t *testing.T) {
+	dir := t.TempDir()
+	worktreePath := filepath.Join(dir, "myapp-feature-x")
+	repoRoot := filepath.Join(dir, "myapp")
+	if err := os.MkdirAll(worktreePath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Write a script that prints the env vars we care about.
+	script := filepath.Join(dir, "check.sh")
+	if err := os.WriteFile(script, []byte("echo \"$WORKTREE_NAME|$REPO_NAME\""), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := captureRunScript(script, worktreePath, "feature-x", repoRoot, dir)
+	if err != nil {
+		t.Fatalf("RunScript: %v", err)
+	}
+	got := strings.TrimSpace(out)
+	want := "myapp-feature-x|myapp"
+	if got != want {
+		t.Errorf("env vars = %q, want %q", got, want)
+	}
+}
+
+// captureRunScript runs RunScript but captures stdout instead of inheriting it.
+func captureRunScript(scriptPath, worktreePath, branchName, repoRoot, originalDir string) (string, error) {
+	cmd := execCommand("bash", scriptPath)
+	cmd.Dir = worktreePath
+	var buf strings.Builder
+	cmd.Stdout = &buf
+	cmd.Env = append(os.Environ(),
+		"WORKTREE_PATH="+worktreePath,
+		"WORKTREE_NAME="+filepath.Base(worktreePath),
+		"BRANCH_NAME="+branchName,
+		"REPO_NAME="+filepath.Base(repoRoot),
+		"REPO_ROOT="+repoRoot,
+		"ORIGINAL_DIR="+originalDir,
+	)
+	err := cmd.Run()
+	return buf.String(), err
+}
+
+func execCommand(name string, args ...string) *exec.Cmd {
+	return exec.Command(name, args...)
+}
+
+func writeEnvFile(t *testing.T, dir, content string) string {
+	t.Helper()
+	path := filepath.Join(dir, ".env")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func readEnvFile(t *testing.T, path string) string {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
+
+func TestEnvSet_ReplacesExisting(t *testing.T) {
+	dir := t.TempDir()
+	path := writeEnvFile(t, dir, "DEBUG=true\nAPP_URL=http://localhost\n")
+
+	if err := EnvSet(EnvSetConfig{File: path, Pairs: []string{"DEBUG=false"}}); err != nil {
+		t.Fatal(err)
+	}
+
+	got := readEnvFile(t, path)
+	want := "DEBUG=false\nAPP_URL=http://localhost\n"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestEnvSet_AppendsNew(t *testing.T) {
+	dir := t.TempDir()
+	path := writeEnvFile(t, dir, "DEBUG=true\n")
+
+	if err := EnvSet(EnvSetConfig{File: path, Pairs: []string{"NEWKEY=hello"}}); err != nil {
+		t.Fatal(err)
+	}
+
+	got := readEnvFile(t, path)
+	want := "DEBUG=true\nNEWKEY=hello\n"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestEnvSet_MultipleValues(t *testing.T) {
+	dir := t.TempDir()
+	path := writeEnvFile(t, dir, "DEBUG=true\nAPP_URL=http://localhost\n")
+
+	err := EnvSet(EnvSetConfig{
+		File:  path,
+		Pairs: []string{"DEBUG=false", "APP_URL=http://myapp-feat.test", "DB_NAME=mydb"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := readEnvFile(t, path)
+	want := "DEBUG=false\nAPP_URL=http://myapp-feat.test\nDB_NAME=mydb\n"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestEnvSet_PreservesComments(t *testing.T) {
+	dir := t.TempDir()
+	path := writeEnvFile(t, dir, "# app config\nDEBUG=true\n\n# url\nAPP_URL=http://localhost\n")
+
+	if err := EnvSet(EnvSetConfig{File: path, Pairs: []string{"DEBUG=false"}}); err != nil {
+		t.Fatal(err)
+	}
+
+	got := readEnvFile(t, path)
+	want := "# app config\nDEBUG=false\n\n# url\nAPP_URL=http://localhost\n"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestEnvSet_ValueContainsEquals(t *testing.T) {
+	dir := t.TempDir()
+	path := writeEnvFile(t, dir, "TOKEN=old\n")
+
+	if err := EnvSet(EnvSetConfig{File: path, Pairs: []string{"TOKEN=a=b=c"}}); err != nil {
+		t.Fatal(err)
+	}
+
+	got := readEnvFile(t, path)
+	want := "TOKEN=a=b=c\n"
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestEnvSet_MissingFile(t *testing.T) {
+	err := EnvSet(EnvSetConfig{File: "/nonexistent/.env", Pairs: []string{"K=V"}})
+	if err == nil {
+		t.Fatal("expected error for missing file")
+	}
+}
+
+func TestEnvSet_InvalidPair(t *testing.T) {
+	dir := t.TempDir()
+	path := writeEnvFile(t, dir, "K=V\n")
+
+	err := EnvSet(EnvSetConfig{File: path, Pairs: []string{"NOEQUALS"}})
+	if err == nil {
+		t.Fatal("expected error for pair without '='")
+	}
+}
+
 func TestCreate_EmptyBranchName(t *testing.T) {
 	repoRoot := setupRepo(t)
 	repoName := filepath.Base(repoRoot)
