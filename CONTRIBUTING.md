@@ -19,8 +19,13 @@ Requires Go 1.21+.
    Or use the tool itself: `wtw feat/my-thing`
 2. Make your changes
 3. Add or update tests if relevant
-4. Run `go test ./...` and make sure everything passes
+4. Run `make test` and `make lint`
 5. Open a pull request
+
+## Linting
+
+Use `make lint` to run `golangci-lint`.
+It installs and runs a pinned version (`v2.10.1`) from `~/.local/bin` for consistent local/CI behavior.
 
 ## Commit messages
 
