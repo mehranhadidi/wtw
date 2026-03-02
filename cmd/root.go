@@ -4,6 +4,8 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"wtw/internal/update"
 )
 
 // rootCmd is the default action: `wtw [branch]` creates a worktree.
@@ -18,11 +20,20 @@ Optionally runs a .wtwrc setup script in the new worktree.`,
 	Args:          cobra.MaximumNArgs(2),
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	RunE:          runCreate,
+	PersistentPreRun: func(cmd *cobra.Command, _ []string) {
+		if cmd.Name() == "update" {
+			return
+		}
+		update.MaybeAutoCheckAndPrompt(appVersion)
+	},
+	RunE: runCreate,
 }
+
+var appVersion = "dev"
 
 // SetVersion sets the version string shown by --version.
 func SetVersion(v string) {
+	appVersion = v
 	rootCmd.Version = v
 }
 

@@ -77,11 +77,22 @@ When you're done, run `wtw done` from inside the worktree to remove it cleanly.
 | `wtw <branch> <dir>` | | Create a worktree in a specific directory |
 | `wtw list` | `wtw ls` | List all worktrees and their branches |
 | `wtw done` | `wtw d` | Remove the current worktree |
+| `wtw update` | | Check for updates and install with approval |
 | `wtw init` | `wtw i` | Create a sample `.wtwrc` setup script in the repo |
 | `wtw run-wtwrc` | `wtw rrc` | Re-run the setup script in the current worktree |
 | `wtw env-set <file> KEY=VALUE ...` | | Set or add key-value pairs in an env file |
 
 **`-c <script>` flag** — Use a custom setup script instead of `.wtwrc`.
+
+### Update checks
+
+`wtw` checks for updates periodically (not on every run) and notifies you once per new version.
+The check runs at most once every 24 hours. When an update is found, it labels the change type (`major`, `minor`, `patch`) and asks for approval before installing.
+The approval prompt explicitly says `Major update`, `Minor update`, or `Patch update`.
+
+- Disable automatic checks: `WTW_NO_UPDATE_CHECK=1`
+- Check manually anytime: `wtw update`
+- Non-interactive install: `wtw update --yes`
 
 ### Automatic project setup with `.wtwrc`
 
